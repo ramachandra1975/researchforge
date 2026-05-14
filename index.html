@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Research Forge — Aesthetics of Society</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Montserrat:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   RESEARCH FORGE — Full Integration Add-on
+   Paste this entire file's <style> and <body> content into your
+   main index.html. Instructions at bottom of file.
+   ═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  --primary-blue:#1a365d; --gold:#c5a059; --gold-light:#e2c98a;
+  --cream:#fdfaf5; --cream-dark:#f5efe3; --text-muted:#666;
+  --border:#ececec; --navy:#0f2240;
+  /* Forge-specific */
+  --forge-deep:#0a0e1a; --forge-panel:#0f1628; --forge-border:rgba(197,160,89,0.18);
+  --forge-gold:#c5a059; --forge-accent:#7c6fff;
+  --forge-green:#2dd4a0; --forge-red:#f87171; --forge-blue:#60a5fa;
+  --g-groq:#ff6b35; --g-gemini:#4285f4; --g-openrouter:#8b5cf6;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Cormorant Garamond',serif;background:#fff;color:#333;overflow-x:hidden}
+
+/* ══════════════════════════════════════════════
+   FORGE DEMO SHELL (remove when integrating)
+   ══════════════════════════════════════════════ */
+.forge-demo-nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  height:66px;background:rgba(255,255,255,0.97);backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(197,160,89,0.2);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 2.5%;
+}
+.forge-demo-brand{font-family:'Montserrat',sans-serif;font-weight:700;font-size:0.72rem;
+  letter-spacing:2px;color:var(--primary-blue);}
+.forge-demo-open{
+  font-family:'Montserrat',sans-serif;font-size:0.62rem;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;
+  background:linear-gradient(135deg,#0a0e1a,#1a2040);
+  color:var(--gold);border:1px solid rgba(197,160,89,0.4);
+  padding:8px 18px;cursor:pointer;transition:all 0.2s;
+}
+.forge-demo-open:hover{border-color:var(--gold);color:#fff;}
+
+/* ══════════════════════════════════════════════
+   RESEARCH FORGE DRAWER  (id="forgeDrawer")
+   ══════════════════════════════════════════════ */
+#forgeDrawer{
+  display:none;position:fixed;top:66px;left:0;right:0;bottom:0;z-index:990;
+  background:var(--forge-deep);
+  animation:forgeSlide 0.32s cubic-bezier(0.22,1,0.36,1) both;
+  overflow:hidden;
+}
+#forgeDrawer.open{display:flex;flex-direction:column;}
+@keyframes forgeSlide{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Provider status bar (top strip) ── */
+.forge-status-bar{
+  background:rgba(255,255,255,0.03);
+  border-bottom:1px solid var(--forge-border);
+  padding:8px 24px;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+}
+.fsb-label{font-family:'Montserrat',sans-serif;font-size:0.52rem;letter-spacing:2px;
+  text-transform:uppercase;color:#555;}
+.provider-pill{
+  display:flex;align-items:center;gap:5px;
+  font-family:'JetBrains Mono',monospace;font-size:0.6rem;
+  padding:3px 9px;border-radius:20px;border:1px solid;cursor:pointer;
+  transition:all 0.2s;position:relative;
+}
+.provider-pill.groq{color:var(--g-groq);border-color:rgba(255,107,53,0.3);}
+.provider-pill.gemini{color:var(--g-gemini);border-color:rgba(66,133,244,0.3);}
+.provider-pill.openrouter{color:var(--g-openrouter);border-color:rgba(139,92,246,0.3);}
+.provider-pill.active{opacity:1;}
+.provider-pill.idle{opacity:0.45;}
+.provider-pill.exhausted{opacity:0.25;text-decoration:line-through;}
+.pill-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.pill-dot.ok{background:var(--forge-green);}
+.pill-dot.busy{background:var(--forge-gold);animation:dotPulse 1s infinite;}
+.pill-dot.dead{background:var(--forge-red);}
+.pill-dot.empty{background:#444;}
+@keyframes dotPulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.fsb-total{margin-left:auto;font-family:'Montserrat',sans-serif;font-size:0.55rem;
+  letter-spacing:1.5px;color:#444;text-transform:uppercase;}
+.fsb-close{
+  font-family:'Montserrat',sans-serif;font-size:0.58rem;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;color:#555;
+  background:none;border:1px solid rgba(255,255,255,0.08);
+  padding:5px 12px;cursor:pointer;transition:all 0.2s;
+}
+.fsb-close:hover{color:var(--gold);border-color:var(--forge-gold);}
+
+/* ── Main layout ── */
+.forge-main{display:flex;flex:1;overflow:hidden;}
+
+/* ── LEFT: Configuration Panel ── */
+.forge-config{
+  width:340px;flex-shrink:0;
+  background:var(--forge-panel);
+  border-right:1px solid var(--forge-border);
+  overflow-y:auto;padding:24px 20px;
+  scrollbar-width:thin;scrollbar-color:rgba(197,160,89,0.2) transparent;
+}
+.forge-config::-webkit-scrollbar{width:3px}
+.forge-config::-webkit-scrollbar-thumb{background:rgba(197,160,89,0.2);border-radius:2px}
+
+.fc-section{margin-bottom:24px;}
+.fc-label{
+  font-family:'Montserrat',sans-serif;font-size:0.52rem;font-weight:700;
+  letter-spacing:3px;text-transform:uppercase;color:var(--forge-gold);
+  margin-bottom:10px;display:block;
+}
+.fc-input{
+  width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);
+  padding:10px 12px;font-family:'Cormorant Garamond',serif;font-size:1rem;color:#ddd;
+  outline:none;transition:border-color 0.2s;resize:none;
+}
+.fc-input:focus{border-color:var(--forge-gold);}
+.fc-input::placeholder{color:#444;}
+
+.domain-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.domain-btn{
+  padding:8px 6px;font-family:'Montserrat',sans-serif;font-size:0.55rem;
+  font-weight:600;letter-spacing:0.5px;text-transform:uppercase;
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
+  color:#666;cursor:pointer;transition:all 0.2s;text-align:left;
+  display:flex;align-items:center;gap:5px;
+}
+.domain-btn:hover{background:rgba(197,160,89,0.08);border-color:rgba(197,160,89,0.3);color:#bbb;}
+.domain-btn.selected{
+  background:rgba(197,160,89,0.12);border-color:rgba(197,160,89,0.5);
+  color:var(--forge-gold);
+}
+.domain-btn .db-icon{font-size:0.9rem;}
+
+.length-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;}
+.length-btn{
+  padding:8px 4px;text-align:center;cursor:pointer;
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
+  color:#555;transition:all 0.2s;
+}
+.length-btn:hover{border-color:rgba(197,160,89,0.3);color:#999;}
+.length-btn.selected{
+  background:rgba(197,160,89,0.1);border-color:rgba(197,160,89,0.5);color:var(--forge-gold);
+}
+.lb-name{font-family:'Montserrat',sans-serif;font-size:0.6rem;font-weight:700;letter-spacing:0.5px;display:block;}
+.lb-tokens{font-family:'JetBrains Mono',monospace;font-size:0.5rem;color:#444;display:block;margin-top:2px;}
+.length-btn.selected .lb-tokens{color:rgba(197,160,89,0.6);}
+.length-btn.pro-tier{position:relative;}
+.length-btn.pro-tier::after{
+  content:'PRO';position:absolute;top:3px;right:3px;
+  font-family:'Montserrat',sans-serif;font-size:0.38rem;font-weight:900;
+  letter-spacing:1px;color:#c5a059;background:rgba(197,160,89,0.1);
+  padding:1px 4px;
+}
+
+.depth-list{display:flex;flex-direction:column;gap:3px;}
+.depth-btn{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;cursor:pointer;
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
+  color:#666;transition:all 0.2s;
+}
+.depth-btn:hover{border-color:rgba(197,160,89,0.3);color:#999;}
+.depth-btn.selected{background:rgba(197,160,89,0.1);border-color:rgba(197,160,89,0.5);color:var(--forge-gold);}
+.db-name{font-family:'Montserrat',sans-serif;font-size:0.6rem;font-weight:700;letter-spacing:0.5px;}
+.db-mult{font-family:'JetBrains Mono',monospace;font-size:0.55rem;}
+
+.struct-list{display:flex;flex-direction:column;gap:3px;}
+.struct-btn{
+  padding:7px 12px;font-family:'Montserrat',sans-serif;font-size:0.58rem;
+  font-weight:600;letter-spacing:0.5px;
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);
+  color:#666;cursor:pointer;transition:all 0.2s;text-align:left;
+}
+.struct-btn:hover{border-color:rgba(197,160,89,0.3);color:#aaa;}
+.struct-btn.selected{background:rgba(197,160,89,0.1);border-color:rgba(197,160,89,0.5);color:var(--forge-gold);}
+
+/* Token budget display */
+.token-budget{
+  background:rgba(255,255,255,0.03);border:1px solid var(--forge-border);
+  padding:12px;margin-bottom:16px;
+}
+.tb-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.tb-key{font-family:'Montserrat',sans-serif;font-size:0.52rem;letter-spacing:1px;
+  text-transform:uppercase;color:#555;}
+.tb-val{font-family:'JetBrains Mono',monospace;font-size:0.6rem;color:var(--forge-gold);}
+.tb-bar{height:2px;background:rgba(255,255,255,0.06);margin-top:8px;}
+.tb-fill{height:100%;background:linear-gradient(90deg,var(--forge-gold),var(--forge-green));
+  transition:width 0.4s;}
+
+.generate-btn{
+  width:100%;padding:14px;
+  background:transparent;border:1px solid rgba(197,160,89,0.5);
+  font-family:'Montserrat',sans-serif;font-size:0.7rem;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;color:var(--forge-gold);
+  cursor:pointer;transition:all 0.25s;display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.generate-btn:hover:not(:disabled){
+  background:rgba(197,160,89,0.1);border-color:var(--forge-gold);color:#fff;
+}
+.generate-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.generate-btn .gen-arrow{font-size:1.1rem;transition:transform 0.3s;}
+.generate-btn:hover:not(:disabled) .gen-arrow{transform:translateX(6px);}
+
+/* ── CENTER: Output Panel ── */
+.forge-output{
+  flex:1;display:flex;flex-direction:column;overflow:hidden;
+  background:var(--forge-deep);
+}
+.fo-toolbar{
+  border-bottom:1px solid var(--forge-border);
+  padding:10px 20px;display:flex;align-items:center;gap:10px;flex-shrink:0;
+  background:rgba(255,255,255,0.015);
+}
+.fo-title{
+  font-family:'Montserrat',sans-serif;font-size:0.58rem;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;color:#555;flex:1;
+}
+.fo-action-btn{
+  font-family:'Montserrat',sans-serif;font-size:0.55rem;font-weight:700;
+  letter-spacing:1px;text-transform:uppercase;color:#555;
+  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+  padding:5px 12px;cursor:pointer;transition:all 0.2s;
+}
+.fo-action-btn:hover{color:var(--forge-gold);border-color:rgba(197,160,89,0.4);}
+.fo-action-btn:disabled{opacity:0.2;cursor:not-allowed;}
+
+.fo-content{flex:1;overflow-y:auto;padding:28px 32px;
+  scrollbar-width:thin;scrollbar-color:rgba(197,160,89,0.15) transparent;}
+.fo-content::-webkit-scrollbar{width:3px}
+.fo-content::-webkit-scrollbar-thumb{background:rgba(197,160,89,0.15);border-radius:2px}
+
+/* Empty state */
+.forge-empty{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;text-align:center;padding:40px;
+}
+.forge-empty-symbol{font-size:4rem;margin-bottom:20px;opacity:0.15;}
+.forge-empty h3{
+  font-family:'Playfair Display',serif;font-size:1.6rem;color:#2a2a3a;
+  margin-bottom:10px;
+}
+.forge-empty p{font-family:'Cormorant Garamond',serif;font-size:1rem;color:#333;line-height:1.7;}
+
+/* Progress / Log */
+.forge-log{
+  background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.06);
+  padding:12px 16px;margin-bottom:16px;max-height:110px;overflow-y:auto;
+  scrollbar-width:thin;
+}
+.forge-log::-webkit-scrollbar{width:2px}
+.fl-line{
+  font-family:'JetBrains Mono',monospace;font-size:0.58rem;line-height:1.9;
+  display:flex;gap:10px;
+}
+.fl-time{color:#333;min-width:38px;}
+.fl-ok{color:var(--forge-green);}
+.fl-warn{color:var(--forge-gold);}
+.fl-err{color:var(--forge-red);}
+.fl-info{color:var(--forge-blue);}
+
+/* Progress bar */
+.forge-progress{margin-bottom:20px;}
+.fp-bar{height:2px;background:rgba(255,255,255,0.06);border-radius:1px;overflow:hidden;}
+.fp-fill{
+  height:100%;background:linear-gradient(90deg,var(--forge-gold),var(--forge-green));
+  border-radius:1px;transition:width 0.5s;
+}
+.fp-label{
+  display:flex;justify-content:space-between;align-items:center;margin-top:6px;
+}
+.fp-text{font-family:'Montserrat',sans-serif;font-size:0.52rem;letter-spacing:1px;color:#444;text-transform:uppercase;}
+.fp-pct{font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--forge-gold);}
+
+/* Generated content styling */
+.forge-doc{color:#ccc;}
+.forge-cover{
+  border:1px solid var(--forge-border);padding:36px;margin-bottom:24px;
+  background:rgba(255,255,255,0.02);text-align:center;
+}
+.fc-domain-tag{
+  font-family:'Montserrat',sans-serif;font-size:0.55rem;letter-spacing:3px;
+  text-transform:uppercase;color:var(--forge-gold);margin-bottom:12px;display:block;
+}
+.fc-doc-title{
+  font-family:'Playfair Display',serif;font-size:1.9rem;color:#e8dcc8;
+  font-weight:700;line-height:1.2;margin-bottom:8px;
+}
+.fc-doc-sub{
+  font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.05rem;
+  color:#666;margin-bottom:20px;
+}
+.fc-meta{
+  display:flex;justify-content:center;gap:24px;flex-wrap:wrap;
+  padding-top:16px;border-top:1px solid var(--forge-border);
+}
+.fc-meta-item{font-family:'Montserrat',sans-serif;font-size:0.52rem;letter-spacing:1px;
+  text-transform:uppercase;color:#444;}
+.fc-meta-item span{color:var(--forge-gold);}
+
+.forge-toc{margin-bottom:24px;}
+.ftoc-title{
+  font-family:'Montserrat',sans-serif;font-size:0.58rem;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;color:var(--forge-gold);
+  margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--forge-border);
+}
+.ftoc-item{
+  display:flex;align-items:baseline;gap:8px;padding:5px 0;
+  border-bottom:1px dotted rgba(255,255,255,0.05);
+}
+.ftoc-num{
+  font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--forge-gold);
+  min-width:24px;flex-shrink:0;
+}
+.ftoc-text{font-family:'Cormorant Garamond',serif;font-size:0.95rem;color:#888;}
+
+.forge-section{margin-bottom:32px;}
+.fs-heading{
+  font-family:'Playfair Display',serif;font-size:1.35rem;color:#e0d0b8;
+  margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--forge-border);
+}
+.fs-heading em{color:var(--forge-gold);font-style:italic;}
+.fs-subheading{
+  font-family:'Montserrat',sans-serif;font-size:0.65rem;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;color:var(--forge-gold);
+  margin:16px 0 8px;
+}
+.fs-para{
+  font-family:'Cormorant Garamond',serif;font-size:1.05rem;color:#aaa;
+  line-height:1.9;margin-bottom:12px;
+}
+.fs-pull{
+  border-left:2px solid var(--forge-gold);padding:12px 18px;
+  background:rgba(197,160,89,0.05);margin:16px 0;
+}
+.fs-pull p{
+  font-family:'Playfair Display',serif;font-style:italic;font-size:1.05rem;
+  color:#c0a870;margin:0;line-height:1.6;
+}
+.fs-refs{
+  background:rgba(255,255,255,0.02);border:1px solid var(--forge-border);
+  padding:16px;margin-top:24px;
+}
+.fs-refs-title{
+  font-family:'Montserrat',sans-serif;font-size:0.55rem;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;color:#555;margin-bottom:10px;
+}
+.fs-ref-item{
+  font-family:'Cormorant Garamond',serif;font-size:0.88rem;color:#666;
+  line-height:1.6;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);
+}
+
+/* ── RIGHT: Key Manager Panel ── */
+.forge-keys{
+  width:280px;flex-shrink:0;
+  background:rgba(8,10,22,0.9);
+  border-left:1px solid var(--forge-border);
+  overflow-y:auto;
+  scrollbar-width:thin;
+}
+.forge-keys::-webkit-scrollbar{width:3px}
+.forge-keys::-webkit-scrollbar-thumb{background:rgba(197,160,89,0.15);border-radius:2px}
+
+.fk-header{
+  padding:14px 16px;border-bottom:1px solid var(--forge-border);
+  background:rgba(255,255,255,0.02);
+}
+.fk-title{
+  font-family:'Montserrat',sans-serif;font-size:0.58rem;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;color:var(--forge-gold);
+  margin-bottom:3px;
+}
+.fk-subtitle{font-family:'JetBrains Mono',monospace;font-size:0.48rem;color:#333;}
+
+.fk-body{padding:12px;}
+.fk-group{margin-bottom:14px;}
+.fk-group-label{
+  font-family:'Montserrat',sans-serif;font-size:0.48rem;font-weight:700;
+  letter-spacing:2.5px;text-transform:uppercase;margin-bottom:6px;
+  display:flex;align-items:center;gap:6px;
+}
+.fk-group-label.groq-group{color:var(--g-groq);}
+.fk-group-label.gemini-group{color:var(--g-gemini);}
+.fk-group-label.openrouter-group{color:var(--g-openrouter);}
+
+.key-slot{
+  display:flex;align-items:center;gap:5px;margin-bottom:4px;
+}
+.ks-num{
+  font-family:'JetBrains Mono',monospace;font-size:0.48rem;color:#333;
+  min-width:16px;text-align:right;
+}
+.ks-input{
+  flex:1;background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.06);
+  padding:5px 7px;font-family:'JetBrains Mono',monospace;font-size:0.5rem;
+  color:#888;outline:none;transition:border-color 0.2s;
+}
+.ks-input:focus{border-color:rgba(197,160,89,0.4);}
+.ks-input.locked{
+  color:transparent;text-shadow:0 0 7px rgba(45,212,160,0.5);
+  border-color:rgba(45,212,160,0.25);background:rgba(5,20,15,0.5);
+  pointer-events:none;
+}
+.ks-input::placeholder{color:#222;font-size:0.45rem;}
+.ks-lock{
+  width:20px;height:20px;background:none;border:1px solid rgba(255,255,255,0.06);
+  color:#333;font-size:0.55rem;cursor:pointer;transition:all 0.2s;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.ks-lock:hover{border-color:rgba(197,160,89,0.4);color:var(--forge-gold);}
+.ks-lock.locked{border-color:rgba(45,212,160,0.3);color:var(--forge-green);}
+
+.fk-stats{
+  padding:10px 16px;border-top:1px solid var(--forge-border);
+  background:rgba(255,255,255,0.01);
+}
+.fks-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;}
+.fks-label{font-family:'Montserrat',sans-serif;font-size:0.48rem;letter-spacing:1px;
+  text-transform:uppercase;color:#333;}
+.fks-val{font-family:'JetBrains Mono',monospace;font-size:0.55rem;color:var(--forge-green);}
+
+.fk-clear-btn{
+  width:100%;margin-top:8px;padding:7px;
+  background:rgba(248,113,113,0.04);border:1px solid rgba(248,113,113,0.15);
+  color:#555;font-family:'Montserrat',sans-serif;font-size:0.5rem;font-weight:700;
+  letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;
+}
+.fk-clear-btn:hover{color:var(--forge-red);border-color:rgba(248,113,113,0.4);}
+
+/* ══════════════════════════════════════════════
+   INTEGRATION TRIGGER BUTTON (add to main nav)
+   ══════════════════════════════════════════════ */
+.mega-trigger.forge-style{
+  background:linear-gradient(135deg,#0a0e1a,#1a1a30);
+  color:#c5a059;
+  border-color:rgba(197,160,89,0.4);
+}
+.mega-trigger.forge-style:hover,.mega-trigger.forge-style.active{
+  border-color:var(--gold);color:#fff;
+}
+
+/* Scrollbar styling for forge panels */
+@media(max-width:900px){
+  .forge-keys{display:none;}
+  .forge-config{width:280px;}
+  .fo-content{padding:16px;}
+}
+@media(max-width:600px){
+  .forge-main{flex-direction:column;}
+  .forge-config{width:100%;height:auto;max-height:50vh;}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ DEMO SHELL (remove when integrating into main site) ═══════════ -->
+<nav class="forge-demo-nav">
+  <div class="forge-demo-brand">AESTHETICS OF SOCIETY · culturalmusings.com</div>
+  <button class="forge-demo-open" onclick="toggleForge()">⚗️ Research Forge ▼</button>
+</nav>
+<div style="height:66px;"></div>
+<div style="padding:80px 5%;text-align:center;background:#fff;">
+  <h2 style="font-family:'Playfair Display',serif;font-size:2.5rem;color:#1a365d;margin-bottom:12px;">
+    Research Forge — Add-on Preview
+  </h2>
+  <p style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:#666;max-width:640px;margin:0 auto 20px;line-height:1.7;">
+    Click <strong>⚗️ Research Forge ▼</strong> above to open the drawer. 
+    This entire file integrates into your existing index.html — see instructions at the bottom of the source code.
+  </p>
+  <p style="font-family:'Montserrat',sans-serif;font-size:0.62rem;letter-spacing:2px;text-transform:uppercase;color:#c5a059;">
+    Enter API keys → right panel · Select domain + length → left panel · Generate → centre
+  </p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     RESEARCH FORGE DRAWER
+     In main site: add this div right after #megaBackdrop
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="forgeDrawer">
+
+  <!-- Status bar -->
+  <div class="forge-status-bar" id="forgeStatusBar">
+    <span class="fsb-label">Providers</span>
+    <!-- Pills injected by JS -->
+    <span class="fsb-total" id="fsbTotal">0 keys active</span>
+    <button class="fsb-close" onclick="toggleForge()">Close ✕</button>
+  </div>
+
+  <!-- Main 3-column layout -->
+  <div class="forge-main">
+
+    <!-- ── LEFT: Config ── -->
+    <div class="forge-config">
+
+      <!-- Topic -->
+      <div class="fc-section">
+        <span class="fc-label">Topic / Subject</span>
+        <textarea class="fc-input" id="forgeTopic" rows="2"
+          placeholder="e.g. 'The 108 Karanas and their neurological significance'"></textarea>
+      </div>
+
+      <!-- Keywords -->
+      <div class="fc-section">
+        <span class="fc-label">Keywords / Focus</span>
+        <input type="text" class="fc-input" id="forgeKeywords"
+          placeholder="e.g. Natya Shastra, BDNF, sacred geometry">
+      </div>
+
+      <!-- Domain -->
+      <div class="fc-section">
+        <span class="fc-label">Research Domain</span>
+        <div class="domain-grid" id="domainGrid">
+          <!-- Injected by JS -->
+        </div>
+      </div>
+
+      <!-- Length Category -->
+      <div class="fc-section">
+        <span class="fc-label">Length Category</span>
+        <div class="length-grid" id="lengthGrid">
+          <!-- Injected by JS -->
+        </div>
+      </div>
+
+      <!-- Research Depth -->
+      <div class="fc-section">
+        <span class="fc-label">Research Depth</span>
+        <div class="depth-list" id="depthList">
+          <!-- Injected by JS -->
+        </div>
+      </div>
+
+      <!-- Structure -->
+      <div class="fc-section">
+        <span class="fc-label">Document Structure</span>
+        <div class="struct-list" id="structList">
+          <!-- Injected by JS -->
+        </div>
+      </div>
+
+      <!-- Token Budget -->
+      <div class="token-budget" id="tokenBudget">
+        <div class="tb-row">
+          <span class="tb-key">Est. Output Tokens</span>
+          <span class="tb-val" id="tbTokens">—</span>
+        </div>
+        <div class="tb-row">
+          <span class="tb-key">API Passes</span>
+          <span class="tb-val" id="tbPasses">—</span>
+        </div>
+        <div class="tb-row">
+          <span class="tb-key">Provider</span>
+          <span class="tb-val" id="tbProvider">—</span>
+        </div>
+        <div class="tb-bar"><div class="tb-fill" id="tbFill" style="width:0%"></div></div>
+      </div>
+
+      <button class="generate-btn" id="generateBtn" onclick="runForge()" disabled>
+        Generate <span class="gen-arrow">→</span>
+      </button>
+
+    </div><!-- /forge-config -->
+
+    <!-- ── CENTRE: Output ── -->
+    <div class="forge-output">
+
+      <div class="fo-toolbar">
+        <span class="fo-title" id="foTitle">Research Forge · Output</span>
+        <button class="fo-action-btn" id="btnCopy" onclick="copyOutput()" disabled>Copy</button>
+        <button class="fo-action-btn" id="btnDownload" onclick="downloadOutput()" disabled>Download .txt</button>
+        <button class="fo-action-btn" id="btnClear" onclick="clearOutput()" disabled>Clear</button>
+      </div>
+
+      <div class="fo-content" id="foContent">
+        <div class="forge-empty">
+          <div class="forge-empty-symbol">⚗️</div>
+          <h3>Research Forge</h3>
+          <p>Configure your research parameters on the left.<br>
+          Enter API keys on the right.<br>
+          Select a domain, length, depth and structure — then generate.</p>
+        </div>
+      </div>
+
+    </div><!-- /forge-output -->
+
+    <!-- ── RIGHT: Key Manager ── -->
+    <div class="forge-keys">
+      <div class="fk-header">
+        <div class="fk-title">API Key Vault</div>
+        <div class="fk-subtitle">Keys stored in memory only · never sent to disk</div>
+      </div>
+
+      <div class="fk-body" id="forgeKeyBody">
+        <!-- Injected by JS -->
+      </div>
+
+      <div class="fk-stats">
+        <div class="fks-row"><span class="fks-label">Active Keys</span><span class="fks-val" id="fkActiveCount">0</span></div>
+        <div class="fks-row"><span class="fks-label">Requests Made</span><span class="fks-val" id="fkReqCount">0</span></div>
+        <div class="fks-row"><span class="fks-label">Current Provider</span><span class="fks-val" id="fkCurProvider">—</span></div>
+        <button class="fk-clear-btn" onclick="clearAllKeys()">Clear All Keys</button>
+      </div>
+    </div><!-- /forge-keys -->
+
+  </div><!-- /forge-main -->
+</div><!-- /forgeDrawer -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     JAVASCRIPT ENGINE
+     ═══════════════════════════════════════════════════════════════ -->
+<script>
+/* ════════════════════════════════════════════
+   1. CONFIGURATION DATA
+   ════════════════════════════════════════════ */
+
+const DOMAINS = [
+  {id:'vedic',     icon:'🕉️',  label:'Vedic Sciences'},
+  {id:'music',     icon:'🎵',  label:'Music & Ragas'},
+  {id:'dance',     icon:'🎭',  label:'Natya & Dance'},
+  {id:'philosophy',icon:'🔮',  label:'Philosophy'},
+  {id:'science',   icon:'🔬',  label:'Life Science'},
+  {id:'physics',   icon:'⚛️',  label:'Physics'},
+  {id:'software',  icon:'💻',  label:'Software'},
+  {id:'arts',      icon:'🎨',  label:'Fine Arts'},
+  {id:'history',   icon:'📜',  label:'History'},
+  {id:'medicine',  icon:'⚕️',  label:'Medicine'},
+  {id:'sanskrit',  icon:'ॐ',   label:'Sanskrit'},
+  {id:'astro',     icon:'🌌',  label:'Astrophysics'},
+];
+
+const LENGTHS = [
+  {id:'l5',   label:'5-liner',   tokens:100,   passes:1, pro:false},
+  {id:'l20',  label:'20-liner',  tokens:400,   passes:1, pro:false},
+  {id:'l40',  label:'40-liner',  tokens:800,   passes:1, pro:false},
+  {id:'l50',  label:'50-liner',  tokens:1000,  passes:1, pro:false},
+  {id:'l100', label:'100-liner', tokens:2000,  passes:1, pro:false},
+  {id:'p3',   label:'3 Pages',   tokens:3000,  passes:2, pro:false},
+  {id:'p9',   label:'9 Pages',   tokens:9000,  passes:2, pro:false},
+  {id:'p20',  label:'20 Pages',  tokens:20000, passes:3, pro:true},
+  {id:'p100', label:'100 Pages', tokens:100000,passes:6, pro:true},
+  {id:'p300', label:'300 Pages', tokens:300000,passes:15,pro:true},
+];
+
+const DEPTHS = [
+  {id:'simple',  label:'Simple Summary',      mult:0.6, desc:'Plain language, key points'},
+  {id:'normal',  label:'Normal Research',     mult:1.0, desc:'Balanced, citations suggested'},
+  {id:'deep',    label:'Deep Research',       mult:1.5, desc:'Analysis, cross-references'},
+  {id:'core',    label:'Core Research',       mult:2.0, desc:'Primary sources, methodology'},
+  {id:'detailed',label:'Detailed & Explanatory', mult:3.0, desc:'Full academic treatment'},
+];
+
+const STRUCTURES = [
+  {id:'article',  label:'📄 Article / Essay'},
+  {id:'report',   label:'📋 Formal Report'},
+  {id:'tutorial', label:'📖 Tutorial / Guide'},
+  {id:'review',   label:'🔍 Literature Review'},
+  {id:'executive',label:'📊 Executive Summary'},
+  {id:'treatise', label:'📚 Scholarly Treatise'},
+];
+
+/* Domain-specific system prompts */
+const DOMAIN_PROMPTS = {
+  vedic:`You are a senior Vedic scholar and researcher at the Cultural Musings institute (culturalmusings.com). 
+You write with deep knowledge of Sanskrit texts, the 108 Karanas, Natya Shastra, Nada Chikitsa, and all Vedic systems.
+Use proper Sanskrit diacritics. Reference primary texts (Rigveda, Natya Shastra, Yoga Sutras, etc.).
+Cite where relevant: Bharata Muni, Patañjali, Shankaracharya, Venkatamakhi.`,
+
+  music:`You are a musicologist specialising in Indian classical music — Carnatic and Hindustani systems.
+You have deep knowledge of the 72 Melakartha ragas, 22 Shrutis, Raga pharmacopoeia (Nada Chikitsa), and Raga-Nakshatra correspondences.
+Use correct musical terminology. Reference scholars: V.N. Bhatkhande, Tyagaraja, Purandaradasa.`,
+
+  dance:`You are a scholar of classical Indian dance, specialising in Natya Shastra and the 108 Karanas.
+You understand the bio-mechanics of Bharatanatyam, Kuchipudi, Odissi. You know the Angahara system, Abhinaya modes, and Rasa theory.
+Reference: Bharata Muni, Nandikesvara (Abhinayadarpana), modern reconstructionists.`,
+
+  philosophy:`You are a philosopher specialising in Indian and comparative philosophy — Advaita Vedanta, Kashmir Shaivism, Nyaya, Samkhya-Yoga.
+You engage rigorously with Western counterparts (Kant, Husserl, Wittgenstein, Chalmers). 
+Reference primary texts with precision.`,
+
+  science:`You are a life scientist with cross-disciplinary expertise in neuroscience, biology, ecology, and biochemistry.
+Write with scientific precision. Include mechanisms, empirical evidence, current research directions.
+Use standard citation format (Author, Year).`,
+
+  physics:`You are a theoretical physicist with interest in quantum mechanics, general relativity, and their philosophical implications.
+You explore intersections with ancient cosmologies (Vedic, Taoist) without sacrificing scientific rigour.`,
+
+  software:`You are a senior software engineer and educator. Write clear, technically precise content with working code examples where relevant.
+Cover architecture, best practices, performance, security. Use current frameworks and methodologies.`,
+
+  arts:`You are an art historian and critic with specialisation in Indian classical arts, iconography, and comparative aesthetics.
+Reference specific works, artists, movements. Connect visual arts to philosophical frameworks.`,
+
+  history:`You are a historian specialising in South Asian cultural history, with expertise in the transmission of knowledge traditions.
+Write with archival precision. Reference primary documents, archaeological evidence, scholarly debates.`,
+
+  medicine:`You are a physician and medical researcher with knowledge of both modern medicine and Ayurvedic systems.
+Write with clinical precision. Distinguish established evidence from emerging research. Include relevant contraindications.`,
+
+  sanskrit:`You are a Sanskrit linguist and Vedic scholar. You write with mastery of grammar (Paninian tradition), phonology, prosody (Chandas), and literary tradition (Kavya).
+Use proper transliteration (IAST). Reference Ashtadhyayi, Rigveda, classical literature.`,
+
+  astro:`You are an astrophysicist with interest in Vedic astronomy (Jyotisha) and its modern parallels.
+Bridge ancient observational astronomy (27 Nakshatras, Vedic cosmology) with modern cosmology.
+Reference: Aryabhata, Brahmagupta, and modern astrophysicists.`,
+};
+
+/* ════════════════════════════════════════════
+   2. PROVIDER / KEY ROTATION ENGINE
+   ════════════════════════════════════════════ */
+
+/* Key slots: 8 Groq + 4 Gemini + 8 OpenRouter = 20 total */
+const KEY_SLOTS = {
+  groq: Array.from({length:8}, (_,i) => ({id:`groq_${i+1}`, key:'', used:0, errors:0})),
+  gemini: Array.from({length:4}, (_,i) => ({id:`gemini_${i+1}`, key:'', used:0, errors:0})),
+  openrouter: Array.from({length:8}, (_,i) => ({id:`or_${i+1}`, key:'', used:0, errors:0})),
+};
+
+let totalRequests = 0;
+let currentProviderLabel = '—';
+
+function getActiveKeys(provider) {
+  return KEY_SLOTS[provider].filter(s => s.key && s.errors < 3);
+}
+
+function getNextKey(provider) {
+  const active = getActiveKeys(provider);
+  if (!active.length) return null;
+  /* Round-robin: pick the one used least */
+  return active.reduce((a,b) => a.used <= b.used ? a : b);
+}
+
+function markKeyError(provider, id) {
+  const slot = KEY_SLOTS[provider].find(s => s.id === id);
+  if (slot) slot.errors++;
+}
+
+function markKeyUsed(provider, id) {
+  const slot = KEY_SLOTS[provider].find(s => s.id === id);
+  if (slot) { slot.used++; slot.errors = 0; }
+  totalRequests++;
+  document.getElementById('fkReqCount').textContent = totalRequests;
+}
+
+/* Provider priority: Groq first → Gemini → OpenRouter */
+async function callAI(prompt, maxTokens=1200) {
+  const order = ['groq','gemini','openrouter'];
+  for (const provider of order) {
+    const slot = getNextKey(provider);
+    if (!slot) continue;
+
+    try {
+      let result;
+      if (provider === 'groq') result = await callGroq(slot.key, prompt, maxTokens);
+      else if (provider === 'gemini') result = await callGemini(slot.key, prompt, maxTokens);
+      else result = await callOpenRouter(slot.key, prompt, maxTokens);
+
+      markKeyUsed(provider, slot.id);
+      currentProviderLabel = `${provider} / ${slot.id}`;
+      document.getElementById('fkCurProvider').textContent = currentProviderLabel;
+      updateStatusBar();
+      return result;
+    } catch(e) {
+      forgeLog(`${provider}/${slot.id} error: ${e.message}`, 'err');
+      markKeyError(provider, slot.id);
+      updateStatusBar();
+    }
+  }
+  throw new Error('All providers exhausted. Please add or refresh API keys.');
+}
+
+async function callGroq(key, prompt, maxTokens) {
+  const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${key}`},
+    body: JSON.stringify({
+      model:'llama-3.3-70b-versatile',
+      max_tokens: Math.min(maxTokens, 8000),
+      messages:[{role:'user', content:prompt}]
+    })
+  });
+  if (!r.ok) throw new Error(`Groq HTTP ${r.status}`);
+  const d = await r.json();
+  return d.choices?.[0]?.message?.content || '';
+}
+
+async function callGemini(key, prompt, maxTokens) {
+  const r = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`,
+    {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        contents:[{parts:[{text:prompt}]}],
+        generationConfig:{maxOutputTokens: Math.min(maxTokens, 8192)}
+      })
+    }
+  );
+  if (!r.ok) throw new Error(`Gemini HTTP ${r.status}`);
+  const d = await r.json();
+  return d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+async function callOpenRouter(key, prompt, maxTokens) {
+  const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'Authorization':`Bearer ${key}`,
+      'HTTP-Referer':'https://culturalmusings.com',
+      'X-Title':'Research Forge'
+    },
+    body: JSON.stringify({
+      model:'meta-llama/llama-3.3-70b-instruct:free',
+      max_tokens: Math.min(maxTokens, 8000),
+      messages:[{role:'user', content:prompt}]
+    })
+  });
+  if (!r.ok) throw new Error(`OpenRouter HTTP ${r.status}`);
+  const d = await r.json();
+  return d.choices?.[0]?.message?.content || '';
+}
+
+/* ════════════════════════════════════════════
+   3. GENERATION ENGINE
+   ════════════════════════════════════════════ */
+
+let _state = {
+  domain:null, length:null, depth:null, struct:null,
+  generating:false, outputText:'', outputHTML:''
+};
+
+async function runForge() {
+  if (_state.generating) return;
+  const topic = document.getElementById('forgeTopic').value.trim();
+  const keywords = document.getElementById('forgeKeywords').value.trim();
+  if (!topic) { alert('Please enter a topic.'); return; }
+  if (!_state.domain || !_state.length || !_state.depth || !_state.struct) {
+    alert('Please select domain, length, depth, and structure.'); return;
+  }
+
+  const lenCfg = LENGTHS.find(l=>l.id===_state.length);
+  const depthCfg = DEPTHS.find(d=>d.id===_state.depth);
+  const totalTokens = Math.round(lenCfg.tokens * depthCfg.mult);
+  const passes = lenCfg.passes;
+  const domainCfg = DOMAINS.find(d=>d.id===_state.domain);
+  const sysPrompt = DOMAIN_PROMPTS[_state.domain] || '';
+
+  /* Check at least one provider has keys */
+  const anyActive = ['groq','gemini','openrouter'].some(p => getActiveKeys(p).length > 0);
+  if (!anyActive) {
+    alert('Please enter at least one API key in the right panel.');
+    return;
+  }
+
+  _state.generating = true;
+  setGenerateBtn(false);
+  clearOutputArea();
+  setOutputToolbar(false);
+  document.getElementById('foTitle').textContent = `Generating: ${topic.slice(0,40)}…`;
+
+  forgeLog(`Starting: ${domainCfg.label} · ${lenCfg.label} · ${depthCfg.label}`, 'info');
+  forgeLog(`Target: ~${totalTokens} tokens across ${passes} pass(es)`, 'info');
+
+  try {
+    let finalHTML = '';
+    let finalText = '';
+
+    if (passes === 1) {
+      /* ── SINGLE PASS ── */
+      setProgress(10, 'Building prompt…');
+      const prompt = buildSinglePassPrompt(sysPrompt, topic, keywords, lenCfg, depthCfg, _state.struct);
+      setProgress(20, 'Calling AI…');
+      const raw = await callAI(prompt, Math.min(totalTokens + 200, 8000));
+      setProgress(80, 'Rendering…');
+      forgeLog(`Received ${raw.split(' ').length} words`, 'ok');
+      finalText = raw;
+      finalHTML = renderSinglePass(topic, keywords, domainCfg, lenCfg, depthCfg, _state.struct, raw);
+      setProgress(100, 'Done');
+
+    } else if (passes === 2) {
+      /* ── 2-PASS: Outline → Fill ── */
+      setProgress(10, 'Pass 1: generating outline…');
+      const outlinePrompt = buildOutlinePrompt(sysPrompt, topic, keywords, lenCfg, depthCfg, _state.struct);
+      const outline = await callAI(outlinePrompt, 800);
+      forgeLog('Outline received', 'ok');
+      setProgress(40, 'Pass 2: expanding content…');
+      const contentPrompt = buildContentFromOutline(sysPrompt, topic, keywords, outline, lenCfg, depthCfg, _state.struct);
+      const chunkSize = Math.min(Math.round(totalTokens * 0.9), 7500);
+      const content = await callAI(contentPrompt, chunkSize);
+      forgeLog(`Content received (${content.split(' ').length} words)`, 'ok');
+      setProgress(85, 'Rendering document…');
+      finalText = outline + '\n\n' + content;
+      finalHTML = renderMultiPass(topic, keywords, domainCfg, lenCfg, depthCfg, _state.struct, outline, content);
+      setProgress(100, 'Done');
+
+    } else {
+      /* ── MULTI-PASS: Structure → Chapters → Content ── */
+      setProgress(5, 'Pass 1: structure plan…');
+      const structPrompt = buildStructurePrompt(sysPrompt, topic, keywords, lenCfg, depthCfg, _state.struct);
+      const structure = await callAI(structPrompt, 600);
+      forgeLog('Structure plan received', 'ok');
+      setProgress(15, 'Pass 2: detailed outline…');
+      const detailOutlinePrompt = buildDetailedOutline(sysPrompt, topic, keywords, structure, lenCfg);
+      const detailedOutline = await callAI(detailOutlinePrompt, 1200);
+      forgeLog('Detailed outline received', 'ok');
+
+      /* Parse chapters from outline */
+      const chapters = parseChapters(detailedOutline);
+      const chunkTokens = Math.min(Math.round(totalTokens / Math.max(chapters.length, 3)), 7500);
+      let allContent = '';
+      const chapterContents = [];
+
+      for (let i=0; i<Math.min(chapters.length, 8); i++) {
+        const pct = 15 + Math.round((i/(Math.min(chapters.length,8))) * 75);
+        setProgress(pct, `Chapter ${i+1}/${chapters.length}: ${chapters[i].slice(0,30)}…`);
+        const chapPrompt = buildChapterPrompt(sysPrompt, topic, keywords, chapters[i], detailedOutline, lenCfg, depthCfg);
+        const chapContent = await callAI(chapPrompt, chunkTokens);
+        chapterContents.push({heading: chapters[i], content: chapContent});
+        allContent += `\n\n## ${chapters[i]}\n\n${chapContent}`;
+        forgeLog(`Chapter ${i+1} done (${chapContent.split(' ').length} words)`, 'ok');
+      }
+
+      if (chapters.length > 8) forgeLog(`Note: ${chapters.length-8} chapters truncated for free tier`, 'warn');
+      setProgress(92, 'Rendering full document…');
+      finalText = structure + '\n\n' + detailedOutline + allContent;
+      finalHTML = renderChunkedDoc(topic, keywords, domainCfg, lenCfg, depthCfg, _state.struct, detailedOutline, chapterContents);
+      setProgress(100, 'Done');
+    }
+
+    _state.outputText = finalText;
+    _state.outputHTML = finalHTML;
+    displayOutput(finalHTML);
+    setOutputToolbar(true);
+    document.getElementById('foTitle').textContent = `✓ ${topic.slice(0,50)}`;
+    forgeLog('Generation complete', 'ok');
+
+  } catch(e) {
+    forgeLog('Error: ' + e.message, 'err');
+    displayError(e.message);
+    document.getElementById('foTitle').textContent = 'Research Forge · Error';
+  }
+
+  _state.generating = false;
+  setGenerateBtn(true);
+}
+
+/* ════════════════════════════════════════════
+   4. PROMPT BUILDERS
+   ════════════════════════════════════════════ */
+
+function buildSinglePassPrompt(sys, topic, keywords, len, depth, struct) {
+  const wordTarget = Math.round(len.tokens * 0.75);
+  const kw = keywords ? `Keywords to emphasise: ${keywords}.` : '';
+  return `${sys}
+
+Write a ${depth.label.toLowerCase()} ${struct} on: "${topic}".
+${kw}
+Target: approximately ${wordTarget} words.
+Structure: Include a clear introduction, well-developed body sections with subheadings, and a conclusion.
+For academic/research content, include 4–6 relevant references at the end.
+Write in flowing paragraphs — no bullet lists unless specifically appropriate.
+Depth: ${depth.desc}.`;
+}
+
+function buildOutlinePrompt(sys, topic, keywords, len, depth, struct) {
+  const kw = keywords ? `Keywords: ${keywords}.` : '';
+  return `${sys}
+
+Create a detailed outline for a ${len.label} ${depth.label.toLowerCase()} ${struct} on: "${topic}".
+${kw}
+Format:
+1. Title (compelling, domain-specific)
+2. Abstract (3–4 sentences)
+3. 5–8 main section headings with 2–3 subheadings each
+4. Conclusion heading
+5. Key references (5–8 items)
+
+Output ONLY the outline. Be specific to the domain.`;
+}
+
+function buildContentFromOutline(sys, topic, keywords, outline, len, depth, struct) {
+  const wordTarget = Math.round(len.tokens * 0.75);
+  return `${sys}
+
+Here is the outline for a research ${struct} on "${topic}":
+
+${outline}
+
+Now write the FULL content following this outline exactly.
+Target: approximately ${wordTarget} words.
+Depth: ${depth.desc}.
+Write in flowing scholarly prose. Include all sections from the outline.
+Add transitions between sections. Do not truncate.`;
+}
+
+function buildStructurePrompt(sys, topic, keywords, len, depth, struct) {
+  const kw = keywords ? `Keywords: ${keywords}.` : '';
+  return `${sys}
+
+Plan the high-level structure for a major ${len.label} ${struct} on: "${topic}".
+${kw}
+Output:
+- Primary thesis statement
+- 3–5 main themes
+- Methodology approach
+- Key source categories needed
+Be concise — this is the planning stage only.`;
+}
+
+function buildDetailedOutline(sys, topic, keywords, structure, len) {
+  return `${sys}
+
+Based on this structure plan:
+${structure}
+
+Create a DETAILED chapter-by-chapter outline for a ${len.label} work on "${topic}".
+Format each chapter as:
+CHAPTER [N]: [Title]
+- Subsection A: [description]
+- Subsection B: [description]
+- Key arguments: [2–3 bullet points]
+
+Include 8–12 chapters. Be specific and domain-appropriate.`;
+}
+
+function buildChapterPrompt(sys, topic, keywords, chapter, outline, len, depth) {
+  return `${sys}
+
+You are writing Chapter: "${chapter}" of a major work on "${topic}".
+
+Full outline for context:
+${outline.slice(0, 800)}
+
+Write THIS CHAPTER ONLY in full. Depth: ${depth.desc}.
+Target: 600–900 words for this chapter.
+Use scholarly prose, subheadings, and at least one key quotation or reference.
+Begin with the chapter heading.`;
+}
+
+function parseChapters(outline) {
+  const lines = outline.split('\n');
+  const chapters = [];
+  for (const line of lines) {
+    if (/^CHAPTER\s+\d+:/i.test(line.trim()) || /^##\s+/.test(line.trim())) {
+      const title = line.replace(/^CHAPTER\s+\d+:\s*/i,'').replace(/^##\s+/,'').trim();
+      if (title) chapters.push(title);
+    }
+  }
+  return chapters.length > 0 ? chapters : ['Introduction', 'Core Analysis', 'Implications', 'Conclusion'];
+}
+
+/* ════════════════════════════════════════════
+   5. RENDERERS
+   ════════════════════════════════════════════ */
+
+function renderSinglePass(topic, keywords, domain, len, depth, struct, raw) {
+  const paras = raw.split(/\n{2,}/).filter(p=>p.trim());
+  const sections = [];
+  let currentSection = null;
+
+  for (const para of paras) {
+    const trimmed = para.trim();
+    if (!trimmed) continue;
+    /* Detect heading */
+    if (trimmed.length < 80 && (trimmed.startsWith('#') || /^[A-Z][^.!?]*$/.test(trimmed) || trimmed.endsWith(':'))) {
+      if (currentSection) sections.push(currentSection);
+      currentSection = {heading: trimmed.replace(/^#+\s*/,'').replace(/:$/,''), paras:[]};
+    } else {
+      if (!currentSection) currentSection = {heading:null, paras:[]};
+      currentSection.paras.push(trimmed);
+    }
+  }
+  if (currentSection) sections.push(currentSection);
+
+  let html = renderCover(topic, domain, len, depth, struct);
+  html += `<div class="forge-doc">`;
+
+  for (const sec of sections) {
+    html += `<div class="forge-section">`;
+    if (sec.heading) html += `<div class="fs-heading">${sec.heading}</div>`;
+    for (const p of sec.paras) {
+      if (p.startsWith('"') && p.length < 200) {
+        html += `<div class="fs-pull"><p>${p}</p></div>`;
+      } else {
+        html += `<p class="fs-para">${p}</p>`;
+      }
+    }
+    html += `</div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+function renderMultiPass(topic, keywords, domain, len, depth, struct, outline, content) {
+  const tocLines = outline.split('\n').filter(l => /^\d+\./.test(l.trim())).map(l=>l.trim());
+
+  let html = renderCover(topic, domain, len, depth, struct);
+
+  if (tocLines.length > 0) {
+    html += `<div class="forge-toc"><div class="ftoc-title">Table of Contents</div>`;
+    tocLines.forEach((line, i) => {
+      const text = line.replace(/^\d+\.\s*/,'');
+      html += `<div class="ftoc-item"><span class="ftoc-num">${String(i+1).padStart(2,'0')}</span><span class="ftoc-text">${text}</span></div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `<div class="forge-doc">`;
+  const paras = content.split(/\n{2,}/).filter(p=>p.trim());
+  for (const para of paras) {
+    const t = para.trim();
+    if (!t) continue;
+    if (/^#+\s/.test(t)) {
+      html += `<div class="fs-heading">${t.replace(/^#+\s*/,'')}</div>`;
+    } else if (t.startsWith('"') && t.length < 200) {
+      html += `<div class="fs-pull"><p>${t}</p></div>`;
+    } else {
+      html += `<p class="fs-para">${t}</p>`;
+    }
+  }
+  html += `</div>`;
+  return html;
+}
+
+function renderChunkedDoc(topic, keywords, domain, len, depth, struct, outline, chapters) {
+  const tocLines = outline.split('\n')
+    .filter(l => /^CHAPTER\s+\d+:/i.test(l.trim()) || /^##\s+/.test(l.trim()))
+    .map(l => l.replace(/^CHAPTER\s+\d+:\s*/i,'').replace(/^##\s+/,'').trim())
+    .filter(Boolean);
+
+  let html = renderCover(topic, domain, len, depth, struct);
+
+  if (tocLines.length > 0) {
+    html += `<div class="forge-toc"><div class="ftoc-title">Table of Contents</div>`;
+    tocLines.forEach((line, i) => {
+      html += `<div class="ftoc-item"><span class="ftoc-num">${String(i+1).padStart(2,'0')}</span><span class="ftoc-text">${line}</span></div>`;
+    });
+    html += `</div>`;
+  }
+
+  html += `<div class="forge-doc">`;
+  for (const chap of chapters) {
+    html += `<div class="forge-section"><div class="fs-heading"><em>${chap.heading}</em></div>`;
+    const paras = chap.content.split(/\n{2,}/).filter(p=>p.trim());
+    for (const para of paras) {
+      const t = para.trim();
+      if (!t) continue;
+      if (/^#+\s/.test(t)) {
+        html += `<div class="fs-subheading">${t.replace(/^#+\s*/,'')}</div>`;
+      } else if (t.startsWith('"') && t.length < 200) {
+        html += `<div class="fs-pull"><p>${t}</p></div>`;
+      } else {
+        html += `<p class="fs-para">${t}</p>`;
+      }
+    }
+    html += `</div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+function renderCover(topic, domain, len, depth, struct) {
+  const now = new Date().toLocaleDateString('en-IN', {year:'numeric', month:'long', day:'numeric'});
+  const structLabel = STRUCTURES.find(s=>s.id===struct)?.label || struct;
+  return `<div class="forge-cover">
+    <span class="fc-domain-tag">${domain.icon} ${domain.label}</span>
+    <div class="fc-doc-title">${topic}</div>
+    <div class="fc-doc-sub">${structLabel.replace(/^[^\s]+\s/,'')} · ${len.label} · ${depth.label}</div>
+    <div class="fc-meta">
+      <span class="fc-meta-item">Domain: <span>${domain.label}</span></span>
+      <span class="fc-meta-item">Length: <span>${len.label}</span></span>
+      <span class="fc-meta-item">Depth: <span>${depth.label}</span></span>
+      <span class="fc-meta-item">Generated: <span>${now}</span></span>
+      <span class="fc-meta-item">Source: <span>culturalmusings.com</span></span>
+    </div>
+  </div>`;
+}
+
+/* ════════════════════════════════════════════
+   6. UI BUILDERS
+   ════════════════════════════════════════════ */
+
+function buildDomainGrid() {
+  const grid = document.getElementById('domainGrid');
+  grid.innerHTML = DOMAINS.map(d => `
+    <button class="domain-btn" data-id="${d.id}" onclick="selectDomain('${d.id}')">
+      <span class="db-icon">${d.icon}</span>${d.label}
+    </button>`).join('');
+}
+
+function buildLengthGrid() {
+  const grid = document.getElementById('lengthGrid');
+  grid.innerHTML = LENGTHS.map(l => `
+    <button class="length-btn${l.pro?' pro-tier':''}" data-id="${l.id}" onclick="selectLength('${l.id}')">
+      <span class="lb-name">${l.label}</span>
+      <span class="lb-tokens">~${l.tokens.toLocaleString()} tok</span>
+    </button>`).join('');
+}
+
+function buildDepthList() {
+  const list = document.getElementById('depthList');
+  list.innerHTML = DEPTHS.map(d => `
+    <button class="depth-btn" data-id="${d.id}" onclick="selectDepth('${d.id}')">
+      <span class="db-name">${d.label}</span>
+      <span class="db-mult">${d.mult}×</span>
+    </button>`).join('');
+}
+
+function buildStructList() {
+  const list = document.getElementById('structList');
+  list.innerHTML = STRUCTURES.map(s => `
+    <button class="struct-btn" data-id="${s.id}" onclick="selectStruct('${s.id}')">
+      ${s.label}
+    </button>`).join('');
+}
+
+function buildKeyPanel() {
+  const body = document.getElementById('forgeKeyBody');
+  const groups = [
+    {key:'groq', label:'Groq', cls:'groq-group', ph:'gsk_...', count:8},
+    {key:'gemini', label:'Gemini', cls:'gemini-group', ph:'AIzaSy...', count:4},
+    {key:'openrouter', label:'OpenRouter', cls:'openrouter-group', ph:'sk-or-v1-...', count:8},
+  ];
+  body.innerHTML = groups.map(g => `
+    <div class="fk-group">
+      <div class="fk-group-label ${g.cls}">${g.label} × ${g.count}</div>
+      ${KEY_SLOTS[g.key].map((slot,i) => `
+        <div class="key-slot">
+          <span class="ks-num">${i+1}</span>
+          <input type="text" class="ks-input" id="ks-${slot.id}"
+            placeholder="${g.ph}" autocomplete="off" spellcheck="false"
+            onpaste="handleKeyPaste(event,'${g.key}','${slot.id}')"
+            onkeydown="handleKeyEnter(event,'${g.key}','${slot.id}')">
+          <button class="ks-lock" id="ks-btn-${slot.id}"
+            onclick="lockKey('${g.key}','${slot.id}')">🔒</button>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+function buildStatusBar() {
+  const bar = document.getElementById('forgeStatusBar');
+  const pills = document.getElementById('forge-pills') || (() => {
+    const span = document.createElement('span');
+    span.id = 'forge-pills';
+    span.style.display = 'contents';
+    bar.insertBefore(span, bar.querySelector('.fsb-total'));
+    return span;
+  })();
+
+  const groups = [
+    {key:'groq', label:'Groq', cls:'groq'},
+    {key:'gemini', label:'Gemini', cls:'gemini'},
+    {key:'openrouter', label:'OpenRouter', cls:'openrouter'},
+  ];
+
+  pills.innerHTML = groups.map(g => {
+    const active = getActiveKeys(g.key).length;
+    const total = KEY_SLOTS[g.key].length;
+    const dotCls = active > 0 ? 'ok' : 'empty';
+    const state = active > 0 ? 'active' : 'idle';
+    return `<span class="provider-pill ${g.cls} ${state}">
+      <span class="pill-dot ${dotCls}"></span>${g.label} ${active}/${total}
+    </span>`;
+  }).join('');
+
+  const totalActive = ['groq','gemini','openrouter'].reduce((s,p)=>s+getActiveKeys(p).length,0);
+  document.getElementById('fsbTotal').textContent = `${totalActive} key${totalActive!==1?'s':''} active`;
+  document.getElementById('fkActiveCount').textContent = totalActive;
+  updateGenerateBtn();
+}
+
+/* ════════════════════════════════════════════
+   7. SELECTION HANDLERS
+   ════════════════════════════════════════════ */
+
+function selectDomain(id) {
+  _state.domain = id;
+  document.querySelectorAll('.domain-btn').forEach(b =>
+    b.classList.toggle('selected', b.dataset.id === id));
+  updateTokenBudget();
+}
+function selectLength(id) {
+  _state.length = id;
+  document.querySelectorAll('.length-btn').forEach(b =>
+    b.classList.toggle('selected', b.dataset.id === id));
+  updateTokenBudget();
+}
+function selectDepth(id) {
+  _state.depth = id;
+  document.querySelectorAll('.depth-btn').forEach(b =>
+    b.classList.toggle('selected', b.dataset.id === id));
+  updateTokenBudget();
+}
+function selectStruct(id) {
+  _state.struct = id;
+  document.querySelectorAll('.struct-btn').forEach(b =>
+    b.classList.toggle('selected', b.dataset.id === id));
+  updateGenerateBtn();
+}
+
+function updateTokenBudget() {
+  if (!_state.length || !_state.depth) return;
+  const len = LENGTHS.find(l=>l.id===_state.length);
+  const dep = DEPTHS.find(d=>d.id===_state.depth);
+  const total = Math.round(len.tokens * dep.mult);
+  const pct = Math.min(100, Math.round((total / 300000) * 100));
+  const provider = getActiveKeys('groq').length > 0 ? 'Groq' :
+                   getActiveKeys('gemini').length > 0 ? 'Gemini' :
+                   getActiveKeys('openrouter').length > 0 ? 'OpenRouter' : 'No key';
+  document.getElementById('tbTokens').textContent = total.toLocaleString();
+  document.getElementById('tbPasses').textContent = `${len.passes} pass${len.passes>1?'es':''}`;
+  document.getElementById('tbProvider').textContent = provider;
+  document.getElementById('tbFill').style.width = pct + '%';
+  updateGenerateBtn();
+}
+
+function updateGenerateBtn() {
+  const ready = _state.domain && _state.length && _state.depth && _state.struct &&
+    ['groq','gemini','openrouter'].some(p => getActiveKeys(p).length > 0);
+  document.getElementById('generateBtn').disabled = !ready;
+}
+
+/* ════════════════════════════════════════════
+   8. KEY HANDLERS
+   ════════════════════════════════════════════ */
+
+function handleKeyPaste(e, provider, id) {
+  e.preventDefault();
+  const raw = (e.clipboardData || window.clipboardData).getData('text').trim();
+  if (raw.length >= 8) lockKey(provider, id, raw);
+}
+function handleKeyEnter(e, provider, id) {
+  if (e.key === 'Enter') {
+    const inp = document.getElementById('ks-' + id);
+    if (inp && inp.value.trim().length >= 8) lockKey(provider, id, inp.value.trim());
+  }
+}
+function lockKey(provider, id, rawKey) {
+  const slot = KEY_SLOTS[provider].find(s => s.id === id);
+  if (!slot) return;
+  const key = rawKey || document.getElementById('ks-' + id)?.value?.trim();
+  if (!key || key.length < 8) return;
+
+  slot.key = key;
+  slot.errors = 0;
+
+  /* Mask input */
+  const inp = document.getElementById('ks-' + id);
+  if (inp) {
+    inp.value = key.slice(0,4) + '••••' + key.slice(-3);
+    inp.classList.add('locked');
+    inp.setAttribute('readonly','');
+  }
+  const btn = document.getElementById('ks-btn-' + id);
+  if (btn) { btn.textContent = '✓'; btn.classList.add('locked'); }
+
+  buildStatusBar();
+  forgeLog(`${provider} key #${id.split('_')[1]} locked`, 'ok');
+}
+
+function clearAllKeys() {
+  if (!confirm('Clear all API keys from memory?')) return;
+  ['groq','gemini','openrouter'].forEach(p => {
+    KEY_SLOTS[p].forEach(slot => {
+      slot.key = ''; slot.used = 0; slot.errors = 0;
+      const inp = document.getElementById('ks-' + slot.id);
+      const btn = document.getElementById('ks-btn-' + slot.id);
+      if (inp) { inp.value=''; inp.classList.remove('locked'); inp.removeAttribute('readonly'); }
+      if (btn) { btn.textContent='🔒'; btn.classList.remove('locked'); }
+    });
+  });
+  buildStatusBar();
+  forgeLog('All keys cleared', 'warn');
+}
+
+function updateStatusBar() { buildStatusBar(); }
+
+/* ════════════════════════════════════════════
+   9. OUTPUT HELPERS
+   ════════════════════════════════════════════ */
+
+let _progressEl = null;
+let _logEl = null;
+
+function clearOutputArea() {
+  const area = document.getElementById('foContent');
+  area.innerHTML = `
+    <div class="forge-progress" id="forgeProgress">
+      <div class="fp-bar"><div class="fp-fill" id="fpFill" style="width:0%"></div></div>
+      <div class="fp-label">
+        <span class="fp-text" id="fpText">Initialising…</span>
+        <span class="fp-pct" id="fpPct">0%</span>
+      </div>
+    </div>
+    <div class="forge-log" id="forgeLogEl"></div>`;
+  _progressEl = null; _logEl = null;
+}
+
+function setProgress(pct, msg) {
+  const fill = document.getElementById('fpFill');
+  const text = document.getElementById('fpText');
+  const pctEl = document.getElementById('fpPct');
+  if (fill) fill.style.width = pct + '%';
+  if (text) text.textContent = msg;
+  if (pctEl) pctEl.textContent = pct + '%';
+}
+
+function forgeLog(msg, type='info') {
+  const logEl = document.getElementById('forgeLogEl');
+  if (!logEl) return;
+  const t = new Date().toTimeString().slice(0,5);
+  const cls = {ok:'fl-ok', warn:'fl-warn', err:'fl-err', info:'fl-info'}[type] || 'fl-info';
+  const line = document.createElement('div');
+  line.className = 'fl-line';
+  line.innerHTML = `<span class="fl-time">${t}</span><span class="${cls}">${msg}</span>`;
+  logEl.appendChild(line);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function displayOutput(html) {
+  const area = document.getElementById('foContent');
+  area.innerHTML = html;
+  area.scrollTop = 0;
+}
+
+function displayError(msg) {
+  const area = document.getElementById('foContent');
+  area.innerHTML += `<div style="margin-top:20px;padding:16px;border:1px solid rgba(248,113,113,0.3);background:rgba(248,113,113,0.04);">
+    <div style="font-family:'Montserrat',sans-serif;font-size:0.58rem;letter-spacing:2px;text-transform:uppercase;color:var(--forge-red);margin-bottom:6px;">Error</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;color:#888;">${msg}</div>
+  </div>`;
+}
+
+function setOutputToolbar(enabled) {
+  ['btnCopy','btnDownload','btnClear'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = !enabled;
+  });
+}
+
+function setGenerateBtn(enabled) {
+  const btn = document.getElementById('generateBtn');
+  if (btn) {
+    btn.disabled = !enabled;
+    btn.querySelector('.gen-arrow').textContent = enabled ? '→' : '⏳';
+  }
+}
+
+function copyOutput() {
+  if (!_state.outputText) return;
+  navigator.clipboard.writeText(_state.outputText).then(() => {
+    const btn = document.getElementById('btnCopy');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+
+function downloadOutput() {
+  if (!_state.outputText) return;
+  const topic = document.getElementById('forgeTopic').value.trim().slice(0,40).replace(/[^a-z0-9]/gi,'_');
+  const blob = new Blob([_state.outputText], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `forge_${topic}_${Date.now()}.txt`;
+  a.click();
+}
+
+function clearOutput() {
+  _state.outputText = '';
+  _state.outputHTML = '';
+  setOutputToolbar(false);
+  document.getElementById('foContent').innerHTML = `<div class="forge-empty">
+    <div class="forge-empty-symbol">⚗️</div>
+    <h3>Research Forge</h3>
+    <p>Ready for your next research request.</p>
+  </div>`;
+  document.getElementById('foTitle').textContent = 'Research Forge · Output';
+}
+
+/* ════════════════════════════════════════════
+   10. DRAWER TOGGLE
+   ════════════════════════════════════════════ */
+
+let _forgeOpen = false;
+function toggleForge() {
+  _forgeOpen = !_forgeOpen;
+  const drawer = document.getElementById('forgeDrawer');
+  drawer.classList.toggle('open', _forgeOpen);
+  document.body.style.overflow = _forgeOpen ? 'hidden' : '';
+}
+
+/* ESC key */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && _forgeOpen) toggleForge();
+});
+
+/* ════════════════════════════════════════════
+   11. INIT
+   ════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  buildDomainGrid();
+  buildLengthGrid();
+  buildDepthList();
+  buildStructList();
+  buildKeyPanel();
+  buildStatusBar();
+
+  /* Default selections */
+  setTimeout(() => {
+    selectLength('l100');
+    selectDepth('normal');
+    selectStruct('article');
+  }, 100);
+});
+</script>
+
+<!--
+═══════════════════════════════════════════════════════════════════════════
+  INTEGRATION INSTRUCTIONS — How to add Research Forge to index.html
+═══════════════════════════════════════════════════════════════════════════
+
+STEP 1 — Add the font (already in your page):
+  ✓ JetBrains Mono: add to your Google Fonts link:
+    &family=JetBrains+Mono:wght@400;500
+
+STEP 2 — Copy the <style> block above into your main <style> section.
+  (everything from "RESEARCH FORGE DRAWER" to "forge-demo-nav" — skip the demo shell styles)
+
+STEP 3 — Add this button to your nav .nav-right (after the Astro & Search button):
+  <div class="nav-sep"></div>
+  <button class="mega-trigger forge-style" onclick="toggleForge()">⚗️ Research Forge <span class="m-arrow">▼</span></button>
+
+STEP 4 — Add to your mobile panel:
+  <span class="nav-mobile-label" style="color:#c5a059;">⚗️ Research Forge</span>
+  <a href="#" onclick="toggleForge();closeMobile();" class="nav-mobile-link">Open Research Forge</a>
+
+STEP 5 — Paste the #forgeDrawer div right after #megaBackdrop in your HTML body.
+
+STEP 6 — Paste the entire <script> block before your closing </body> tag.
+
+STEP 7 — The existing API Key Vault (ckm-toggle) on your page already intercepts
+  paste events. The Forge has its OWN key panel on the right side — both work
+  independently. If you want shared keys, call:
+    window.ckmSetKey('groq', key) → will also work in Forge since Forge
+  reads directly from KEY_SLOTS in its own engine.
+
+STEP 8 — ADDING MORE KEYS:
+  To add more Groq keys beyond 8, change:
+    Array.from({length:8}, ...) → Array.from({length:12}, ...)
+  for the groq entry in KEY_SLOTS. The UI auto-generates slots.
+  Same for Gemini (currently 4) and OpenRouter (currently 8).
+  Total supported: up to 20 keys across 3 providers.
+
+═══════════════════════════════════════════════════════════════════════════
+-->
+
+</body>
+</html>
